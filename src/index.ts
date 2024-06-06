@@ -50,7 +50,7 @@ async function distributedDebounce(
 
   const a = await args.redisclient.set(`${args.key}_lock`, "", {
     NX: true,
-    EX: 100,
+    PX: 100,
   });
 
   if (a !== "OK") return;

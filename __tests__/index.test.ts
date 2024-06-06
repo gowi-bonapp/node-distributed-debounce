@@ -23,7 +23,7 @@ describe("Debounce", () => {
           counter++;
         },
         {
-          wait: 1,
+          wait: 0.4,
           key,
           redisclient: rc,
         }
