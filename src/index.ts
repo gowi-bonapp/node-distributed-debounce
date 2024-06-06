@@ -29,7 +29,7 @@ async function distributedDebounce(
     [ownedTicket] = await args.redisclient
       .multi()
       .incr(args.key)
-      .expire(args.key, args.wait)
+      .pExpire(args.key, args.wait * 1000)
       .exec();
   } catch (error) {
     console.log(error);
