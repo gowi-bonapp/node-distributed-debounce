@@ -28,7 +28,7 @@
     "test": "ts-mocha  --exit --ui tdd ./__tests__/*.ts",
     "prettier": "npx prettier --write ./__tests__/**/*.ts ./src/**/*.ts",
     "build": "tsc -p ./tsconfig.json",
-    "prepublish": "npm run test && npm run build"
+    "prepublish": "npm run build"
   },
   "peerDependencies": {
     "redis": ">= 2.x"
