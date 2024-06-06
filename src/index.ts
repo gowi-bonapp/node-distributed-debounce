@@ -1,4 +1,9 @@
-import type { RedisClient } from "redis";
+// import { RedisClient } from "@types";
+
+import { RedisClientType, createClient } from "redis";
+
+// let client: ;
+// import type { RedisClient } from "redis";
 export const wait = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -16,52 +21,40 @@ async function distributedDebounce(
      * callback function will be called debouncely with each key.
      */
     key: string;
-    redisclient: RedisClient;
+    redisclient: ReturnType<typeof createClient>;
   }
 ) {
-  // incr counter
-  const ownedTicket = await new Promise<number>((resolve, reject) => {
-    args.redisclient
+  let ownedTicket;
+  try {
+    [ownedTicket] = await args.redisclient
       .multi()
       .incr(args.key)
       .expire(args.key, args.wait)
-      .exec((error, result) => {
-        if (error) return reject(error);
-        else return resolve(result[0]);
-      });
-  });
+      .exec();
+  } catch (error) {
+    console.log(error);
+  }
+
+  ownedTicket = ownedTicket?.toString();
 
   // wait for ttl sec.
   await wait(args.wait * 1000);
 
-  // check this counting is the latest.
-  const currentTicket = await new Promise<number>((resolve, reject) => {
-    args.redisclient.get(args.key, (error, result) => {
-      if (error) return reject(error);
-      // when key expired.
-      else if (!result) return resolve(ownedTicket);
-      else return resolve(parseInt(result));
-    });
-  });
+  let currentTicket = "";
+  const currentTicketTemp = await args.redisclient.get(args.key);
+  if (!currentTicketTemp) {
+    currentTicket = ownedTicket?.toString() || "";
+  }
+
   if (ownedTicket !== currentTicket) return;
 
-  // lock for atomicity
-  const ok = await new Promise<"OK" | undefined>((resolve, reject) => {
-    args.redisclient.set(
-      `${args.key}_lock`,
-      "",
-      "NX",
-      "PX",
-      100,
-      (error, result) => {
-        if (error) return reject(error);
-        else return resolve(result);
-      }
-    );
+  const a = await args.redisclient.set(`${args.key}_lock`, "", {
+    NX: true,
+    EX: 100,
   });
-  if (!ok) return;
 
-  // debouced call
+  if (a !== "OK") return;
+
   await callback();
 }
 

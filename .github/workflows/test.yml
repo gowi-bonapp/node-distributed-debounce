@@ -2,8 +2,11 @@ name: test
 on: [push, pull_request]
 jobs:
   test:
-    name: "test on nodejs 14"
-    runs-on: ubuntu-18.04
+    name: "Test on nodejs"
+    strategy:
+      matrix:
+        version: [18]
+    runs-on: ubuntu-latest
     services:
       redis:
         image: redis
@@ -14,14 +17,13 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
-    container: node:14-alpine
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.version }}
       - name: install
-        run: npm i
+        run: npm ci
       - name: test
         run: npm test
-        env:
-          REDIS_HOST: redis
-          REDIS_PORT: 6379
